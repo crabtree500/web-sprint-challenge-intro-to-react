@@ -6,12 +6,11 @@ const urlPlanets = 'http://localhost:9009/api/planets';
 const urlPeople = 'http://localhost:9009/api/people';
 
 function App() {
-  // Create state to hold the data from the API
-  const [name, setName] = useState('');
-  const [homeworld, setHomeworld] = useState('');
   const [matches, setMatches] = useState([]);
 
   useEffect(() => {
+    let isMounted = true;
+
     const fetchData = async () => {
       try {
         const [peopleResponse, planetsResponse] = await Promise.all([
@@ -19,37 +18,48 @@ function App() {
           axios.get(urlPlanets),
         ]);
 
-        const person = peopleResponse.data;
-        const planet = planetsResponse.data;
+        const peopleData = peopleResponse.data;
+        const planetsData = planetsResponse.data;
+console.log(peopleData, planetsData)
+        const matchedData = peopleData.map(person => {
+          const matchedPlanet = planetsData.find(planet => person.homeworld === planet.id);
+          if (matchedPlanet) {
+            return {
+              name: person.name,
+              homeworld: matchedPlanet.name,
+            };
+          }
+          
+          return null;
+        }).filter(match => match !== null);
 
-        setName(person.name);
-        setHomeworld(person.homeworld);
-        
-        const matchedData = [];
-        if (person.homeworld === planet.id) {
-          matchedData.push({
-            homeworld: planet.name,
-          });
+        if (isMounted) {
+          setMatches(matchedData);
         }
-        
-        setMatches(matchedData);
       } catch (error) {
         console.error('Error fetching data:', error);
       }
     };
 
     fetchData();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
+
   return (
     <div>
       <h2>Star Wars Characters</h2>
       <p>See the README of the project for instructions on completing this challenge</p>
-      {/* ❗ Map over the data in state, rendering a Character at each iteration */}
+      {matches.map((match, index) => (
+        <Character key={index} name={match.name} homeworld={match.homeworld} />
+      ))}
     </div>
-  )
+  );
 }
 
-export default App
+export default App;
 
 // ❗ DO NOT CHANGE THE CODE  BELOW
 if (typeof module !== 'undefined' && module.exports) module.exports = App
